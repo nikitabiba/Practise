@@ -121,6 +121,8 @@ public class NewTree : BaseTreeTest
     await tree.ExpandByPath("Рутовый объект 2", "Рутовый объект 2_дочерний_2", "Рутовый объект 2_дочерний_2_дочерний_2");
     var node = await tree.GetNodeByPath("Рутовый объект 2_дочерний_2_дочерний_2");
     Assert.IsNotNull(node);
+    var parentNode = await tree.GetNodeByPath("Рутовый объект 2"); // почему тут проверяем и родительский узел, хотя ранее не проверяли
+    Assert.That(parentNode.IsExpanded, Is.True, "Родительский узел должен быть развернут");
   }
 
   [Test(Description = "Проверка на разворачивание узла")]
@@ -128,13 +130,16 @@ public class NewTree : BaseTreeTest
   {
     var tree = Locator.FindMirComponent(MirSelector.Tree).AsTree();
     await tree.WaitForReady();
+    var nodeBeforeExpand = await tree.GetNodeByPath("Рутовый объект 2"); // почему тут теперь проверяем состояние узла до и после
+    Assert.That(nodeBeforeExpand.IsExpandable, Is.True, "Узел должен быть раскрываемым");
+    Assert.That(nodeBeforeExpand.IsExpanded, Is.False, "Узел должен быть изначально свернут");
     await tree.ExpandNode("Рутовый объект 2");
-    var model = await tree.GetNodeByPath("Рутовый объект 2");
-    Assert.IsNotNull(model);
-    Assert.That(model.IsExpanded, Is.True);
+    var nodeAfterExpand = await tree.GetNodeByPath("Рутовый объект 2");
+    Assert.IsNotNull(nodeAfterExpand, "Узел должен существовать после разворачивания");
+    Assert.That(nodeAfterExpand.IsExpanded, Is.True, "Узел должен быть развернут после ExpandNode");
   }
 
-  [Test(Description = "Проверка на получение моделт узла по пути")]
+  [Test(Description = "Проверка на получение модели узла по пути")]
   public override async Task GetNodeModelByPath()
   {
     var tree = Locator.FindMirComponent(MirSelector.Tree).AsTree();
@@ -146,6 +151,7 @@ public class NewTree : BaseTreeTest
     Assert.That(node.IsSelected, Is.False);
     Assert.That(node.IsExpandable, Is.True);
     Assert.That(node.Level, Is.EqualTo(0));
+    Assert.That(node.IsDisabled, Is.False, "Узел должен быть активным"); // почему тут проверяем состояние узла
   }
 
   [Test(Description = "Проверка на открытие контекстного меню")]
@@ -165,7 +171,7 @@ public class NewTree : BaseTreeTest
   public override async Task ScrollToNode()
   {
     var tree = Locator.FindMirComponent(MirSelector.Tree).AsTree();
-    await tree.WaitForReady();
+    await tree.WaitForReady(); // что вообще тут проверяется или должно проверяться и как
   }
 
   [Test(Description = "Проверка на выбор узла")]
@@ -173,7 +179,11 @@ public class NewTree : BaseTreeTest
   {
     var tree = Locator.FindMirComponent(MirSelector.Tree).AsTree();
     await tree.WaitForReady();
+    var nodeBeforeSelect = await tree.GetNodeByPath("Рутовый объект 2"); // почему тут снова проверяется до и после
+    Assert.That(nodeBeforeSelect.IsSelected, Is.False, "Узел должен быть изначально не выбран");
     await tree.SelectNode("Рутовый объект 2");
+    var nodeAfterSelect = await tree.GetNodeByPath("Рутовый объект 2");
+    Assert.That(nodeAfterSelect.IsSelected, Is.True, "Узел должен быть выбран после SelectNode");
   }
 
   [Test(Description = "Проверка на готовность дерева")]
