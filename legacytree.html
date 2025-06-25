@@ -1,0 +1,87 @@
+<div class="tree-wrapper" (contextmenu)="openMenu($event, null)" (keydown)="keyboardClick($event)" tabindex="0">
+  @if (isRootsLoading) {
+    <div class="spinner">
+      <div class="bounce1"></div>
+      <div class="bounce2"></div>
+      <div class="bounce3"></div>
+    </div>
+  } @else {
+    @if (isVirtualScroll) {
+      <cdk-virtual-scroll-viewport orientation="vertical" [itemSize]="scrollItemSize">
+        <ng-container *cdkVirtualFor="let node of dataChange;trackBy:trackByIdentity;" [ngTemplateOutlet]="ndTemplate" [ngTemplateOutletContext]="{ $implicit: node }">
+        </ng-container>
+      </cdk-virtual-scroll-viewport>
+    } @else {
+      @for (node of dataSource.dataChange|async; track trackByIdentity($index, node)) {
+        <ng-container [ngTemplateOutlet]="ndTemplate" [ngTemplateOutletContext]="{ $implicit: node }">
+        </ng-container>
+      }
+    }
+  }
+
+  <ng-template let-node #ndTemplate>
+    <div class="mir-tree-node"
+      [attr.aria-disabled]="node.isDisabled"
+      [id]="node.source.id"
+      #treeNode
+      [attr.parent-id]="node.parent?.source?.id"
+      [attr.aria-level]="node.level"
+      (click)="clickNode($event, node)"
+      (contextmenu)="openMenu($event, node)"
+      (dblclick)="dblclickNode($event, node)"
+      [ngStyle]="{ paddingLeft: node.level * indentValue + 'px' }"
+         [ngClass]="{
+           'mir-tree-node-expandable': isExpandable(node),
+           'mir-tree-node-expanded': node.isExpanded,
+           'mir-tree-hidden-node': hiddenNodes.size > 0 && hiddenNodes.has(node),
+           'mir-tree-node-selected': node.isSelected }"
+      >
+      <div class="mir-tree-node-wrapper-content" [ngStyle]="{ color: node.source.colorFont }">
+        <div class="mir-tree-node-expand-button-wrapper">
+          @if (node.isLoading) {
+            <span class="ml-auto {{icons.spin}} {{icons.spinner}}"></span>
+          } @else {
+            @if (isExpandable(node)) {
+              <span
+                (dblclick)="preventDefault($event)"
+                class="mir-tree-node-expand-button {{icons.chevronRight}}"
+                (click)="preventDefault($event);dataSource.toggleNode(node)"
+              ></span>
+            }
+          }
+
+        </div>
+
+        @if (isCheckbox() && node.canCheck) {
+          <mir-checkbox [isReadonly]="true" [value]="node.isChecked" id="{{ node.source.id }}" [disabled]="node.isDisabled || node.checkDisabled" class="mir-tree-node-checkbox" />
+        }
+        <span class="mir-tree-node-content">
+          <ng-container [ngTemplateOutlet]="defaultNodeTemplate" [ngTemplateOutletContext]="{ node: node }"></ng-container>
+        </span>
+      </div>
+    </div>
+  </ng-template>
+
+
+  <ng-template #template let-node="node">
+    <ng-container [ngTemplateOutlet]="nodeTemplate" [ngTemplateOutletContext]="{ node: node }"></ng-container>
+  </ng-template>
+  <ng-template #simpleTemplate let-node="node">
+    <span class="nameNode">{{ node.source.title }}</span>
+  </ng-template>
+
+  <app-menu-component #menu [settings]="menuSettings" [panelClass]="menuSettings?.panelClass" [node]="selectedNode"> </app-menu-component>
+</div>
+
+
+<ng-template #defaultNodeTemplate let-node="node">
+  @if (node.source.selectIcon || node.source.icon) {
+    <span
+      style="margin-right: 2px; align-self: center"
+      [ngStyle]="{ color: node.source.colorFont }"
+      [ngClass]="node.source.selectIcon ? node.source.selectIcon(node) : node.source.icon"
+    ></span>
+  }
+  <!--node-icon-->
+  <ng-container [ngTemplateOutlet]="nodeTemplate ? template : simpleTemplate" [ngTemplateOutletContext]="{ node: node }"> </ng-container>
+</ng-template>

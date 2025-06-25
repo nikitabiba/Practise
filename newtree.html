@@ -1,0 +1,36 @@
+@if (_dataSource()?.isLoadingRoot()) {
+  <mir-tree-loading />
+} @else {
+  <cdk-tree class="mir-tree" tabindex="0" (keydown)="_handleKeyPress($event)" [dataSource]="_dataSource()" [treeControl]="_treeControl">
+    <cdk-tree-node [id]="node.key" [ngClass]="{ 'mir-tree-node-selected': _selectionModel.isSelected(node), 'mir-tree-node-disabled': node.disabled }" class="mir-tree-node" (click)="_handleClickNode($event, node)" *cdkTreeNodeDef="let node" cdkTreeNodePadding [cdkTreeNodePaddingIndent]="indentValue">
+      @if (_asNode(node);as node) {
+        <div class="mir-tree-node-toggle-button">
+          @if (node.loading) {
+            <i class="{{icons.spin}} {{icons.spinner}} mir-tree-node-toggle-button mir-tree-node-toggle-spinner-button"></i>
+          } @else if (node.expandable) {
+            <mir-icon-button (click)="toggle(node)" class="mir-tree-node-toggle-button" size="sm" [icon]="_treeControl.isExpanded(node) ? icons.chevronDown : icons.chevronRight" />
+          }
+        </div>
+        <div class="mir-tree-node-body" (mirContextMenuOpened)="contentMenuOpened.emit(node)" (mirContextMenuOpening)="contentMenuOpening.emit(node)" [mirContextMenuTriggerFor]="contextMenu" [mirContextMenuTriggerData]="node" [mirContextMenuTriggerElementOrigin]="_elementRef.nativeElement"  [ngStyle]="{ color: node.color }">
+          @if (selectionMode === 'checkbox') {
+            <mir-checkbox [disabled]="node.disabled" [isReadonly]="true" class="mir-tree-node-checkbox" [indeterminate]="_isIndeterminateCheckbox" [value]="isSelected(node)" />
+          }
+          @if (_findTemplate('label-icon');as labelIcon) {
+            <ng-container [ngTemplateOutlet]="labelIcon.templateRef" [ngTemplateOutletContext]="{ $implicit: node }" />
+          } @else {
+            @if (node.icon) {
+              <i class="mir-tree-node-icon" [ngClass]="node.icon"></i>
+            }
+          }
+          <div class="mir-tree-node-label">
+            @if (_findTemplate('label');as labelDir) {
+              <ng-container [ngTemplateOutlet]="labelDir.templateRef" [ngTemplateOutletContext]="{ $implicit: node }" />
+            } @else {
+              {{node.label}}
+            }
+          </div>
+        </div>
+      }
+    </cdk-tree-node>
+  </cdk-tree>
+}
