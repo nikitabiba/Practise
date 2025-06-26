@@ -171,7 +171,7 @@ public class NewTree : BaseTreeTest
   public override async Task ScrollToNode()
   {
     var tree = Locator.FindMirComponent(MirSelector.Tree).AsTree();
-    await tree.WaitForReady(); // что вообще тут проверяется или должно проверяться и как
+    await tree.WaitForReady();
   }
 
   [Test(Description = "Проверка на выбор узла")]
