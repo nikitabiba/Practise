@@ -1,3 +1,27 @@
+using System;
+using System.Threading.Tasks;
+using Mir.Playwright.Extensions.Core.Extensions;
+
+namespace Mir.Playwright.Extensions.Core.Tests.Components;
+
+public abstract class BaseTreeTest(string Url) : StorybookPageTest(Url, null)
+{
+  public abstract Task GetNodeModelByPath();
+  public abstract Task ExpandNode();
+  public abstract Task CollapseNode();
+  public abstract Task SelectNode();
+  public abstract Task ScrollToNode();
+  public abstract Task OpenContextMenu();
+  public abstract Task ExpandByPath();
+  public abstract Task WaitForReady();
+
+  protected async Task ToHaveCountNodesAsync(int count)
+  {
+    var n = Locator.Locator(".mir-tree-node");
+    await Expect(n).ToHaveCountAsync(count);
+  }
+}
+
 [TestFixture(Description = "Тесты для старого дерева")]
 [Parallelizable]
 public class LegacyTree : BaseTreeTest
