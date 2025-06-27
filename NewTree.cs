@@ -14,9 +14,11 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
     private const string LoadingSpinnerSelector = ".mir-tree-node-toggle-spinner-button";
 
     /// <inheritdoc/>
-    public override Task CollapseNode(string label)
+    public override async Task CollapseNode(string label)
     {
-        var nodeLocator = await GetNodeLocatorByLabel(label);
+        var options = GetMatchTextLocatorOptions(label);
+        var nodeLocator = Locator.Locator($"{NodeSelector}", options);
+
         var toggleButton = nodeLocator.Locator($"{ToggleButtonSelector} mir-icon-button");
 
         var isExpanded = await IsNodeExpanded(nodeLocator);
@@ -30,7 +32,7 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
     }
 
     /// <inheritdoc/>
-    public override Task ExpandByPath(params string[] labelsPath)
+    public override async Task ExpandByPath(params string[] labelsPath)
     {
         for (var i = 0; i < labelsPath.Length; i++)
         {
@@ -39,9 +41,11 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
         }
     }
     /// <inheritdoc/>
-    public override Task ExpandNode(string label)
+    public override async Task ExpandNode(string label)
     {
-        var nodeLocator = await GetNodeLocatorByLabel(label);
+        var options = GetMatchTextLocatorOptions(label);
+        var nodeLocator = Locator.Locator($"{NodeSelector}", options);
+
         var toggleButton = nodeLocator.Locator($"{ToggleButtonSelector} mir-icon-button");
 
         var hasToggleButton = await toggleButton.CountAsync() > 0;
@@ -64,7 +68,9 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
     /// <inheritdoc/>
     public override async Task<MirTreeNode> GetNodeByPath(params string[] labelsPath)
     {
-        var nodeLocator = await GetNodeLocatorAsync(labelsPath);
+        var lastLabel = labelsPath.Last();
+        var options = GetMatchTextLocatorOptions(lastLabel);
+        var nodeLocator = Locator.Locator($"{NodeSelector}", options);
         var id = await nodeLocator.GetAttributeAsync("id") ?? "";
         var classes = (await nodeLocator.GetAttributeAsync("class") ?? "").Split(' ');
         var isDisabled = classes.Contains("mir-tree-node-disabled");
@@ -95,9 +101,11 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
         );
     }
     /// <inheritdoc/>
-    public override Task SelectNode(params string[] labelsPath)
+    public override async Task SelectNode(params string[] labelsPath)
     {
-        var nodeLocator = await GetNodeLocatorAsync(labelsPath);
+        var lastLabel = labelsPath.Last();
+        var options = GetMatchTextLocatorOptions(lastLabel);
+        var nodeLocator = Locator.Locator($"{NodeSelector}", options);
 
         var classes = (await nodeLocator.GetAttributeAsync("class") ?? "").Split(' ');
         var isSelected = classes.Contains("mir-tree-node-selected");
@@ -110,31 +118,9 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
         await nodeLocator.ClickAsync();
     }
     /// <inheritdoc/>
-    public override Task WaitForReady()
+    public override async Task WaitForReady()
     {
-        await Locator.Locator("mir-tree-loading").WaitForAsync(new LocatorWaitForOptions
-        {
-            State = WaitForSelectorState.Detached,
-            Timeout = 10000
-        });
-    }
-
-    /// <summary>
-    /// Получает локатор узла по его метке
-    /// </summary>
-    private async Task<ILocator> GetNodeLocatorByLabel(string label)
-    {
-        var options = GetMatchTextLocatorOptions(label);
-        return Locator.Locator($"{NodeSelector}", options);
-    }
-
-    /// <summary>
-    /// Получает локатор узла по пути меток
-    /// </summary>
-    private async Task<ILocator> GetNodeLocatorAsync(params string[] labelsPath)
-    {
-        var lastLabel = labelsPath.Last();
-        return await GetNodeLocatorByLabel(lastLabel);
+        await Locator.Locator("mir-tree-loading").WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Detached });
     }
 
     /// <summary>
@@ -171,8 +157,7 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
     private async Task<int> GetNodeLevel(ILocator nodeLocator)
     {
         var style = await nodeLocator.GetAttributeAsync("style") ?? "";
-
-        var paddingMatch = System.Text.RegularExpressions.Regex.Match(style, @"padding-left:\s*(\d+)px");
+        var paddingMatch = RegexHelper.PaddingLeftPattern().Match(style);
         if (paddingMatch.Success && int.TryParse(paddingMatch.Groups[1].Value, out var padding))
         {
             var indentValue = 24;
@@ -181,7 +166,7 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
 
         return 0;
     }
-    
+
     /// <summary>
     /// Получает id родительского узла
     /// </summary>
@@ -190,4 +175,10 @@ public class TreeComponent(ILocator locator) : BaseTree(locator)
         var parentNode = nodeLocator.Locator("xpath=ancestor::cdk-tree-node[1]");
         return await parentNode.GetAttributeAsync("id") ?? "";
     }
+}
+
+internal static partial class RegexHelper
+{
+    [System.Text.RegularExpressions.GeneratedRegex(@"padding-left:\s*(\d+)px")]
+    public static partial System.Text.RegularExpressions.Regex PaddingLeftPattern();
 }
