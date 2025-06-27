@@ -13,3 +13,44 @@ Call log:
    at NUnit.Framework.Internal.Commands.TestMethodCommand.Execute(TestExecutionContext context)
    at NUnit.Framework.Internal.Commands.BeforeAndAfterTestCommand.<>c__DisplayClass1_0.<Execute>b__0()
    at NUnit.Framework.Internal.Commands.DelegatingTestCommand.RunTestMethodInThreadAbortSafeZone(TestExecutionContext context, Action action)
+
+
+
+protected LocatorLocatorOptions GetMatchTextLocatorOptions(string text)
+  {
+    return new LocatorLocatorOptions { HasTextRegex = new Regex($@"^({Regex.Escape(text)})\b") };
+  }
+
+
+public override async Task<MirTreeNode> GetNodeByPath(params string[] labelsPath)
+    {
+        var nodeLocator = await GetNodeLocatorAsync(labelsPath);
+        var id = await nodeLocator.GetAttributeAsync("id") ?? "";
+        var classes = (await nodeLocator.GetAttributeAsync("class") ?? "").Split(' ');
+        var isDisabled = classes.Contains("mir-tree-node-disabled");
+        var isSelected = classes.Contains("mir-tree-node-selected");
+
+        var iconElement = nodeLocator.Locator(".mir-tree-node-icon");
+        var icon = await iconElement.GetAttributeAsync("class") ?? "";
+
+        var parentId = await GetParentId(nodeLocator);
+
+        var level = await GetNodeLevel(nodeLocator);
+
+        var hasToggleButton = await nodeLocator.Locator($"{ToggleButtonSelector} mir-icon-button").CountAsync() > 0;
+        var isExpandable = hasToggleButton;
+
+        var isExpanded = isExpandable && await IsNodeExpanded(nodeLocator);
+
+        return new MirTreeNode(
+            id,
+            labelsPath.Last(),
+            icon,
+            isExpanded,
+            isExpandable,
+            isSelected,
+            isDisabled,
+            parentId,
+            level
+        );
+    }
